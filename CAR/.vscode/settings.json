@@ -1,0 +1,8 @@
+{
+    "C_Cpp.default.compilerPath": "D:/mingw64/bin/gcc.exe",
+    "C_Cpp.errorSquiggles": "disabled",
+    "python.analysis.extraPaths": [
+        "C:\\Users\\ZOUPENG\\.kendryte\\k230_canmv_stubs\\791c1ceee8acb4699d59d8dbf8f043ea3940a766"
+    ],
+    "python.analysis.stubPath": "C:\\Users\\ZOUPENG\\.kendryte\\k230_canmv_pylance\\c68a042380adad87\\typings"
+}

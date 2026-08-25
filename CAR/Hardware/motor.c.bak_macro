@@ -1,0 +1,87 @@
+#include "motor.h"
+#include "ti_msp_dl_config.h"
+
+/*
+ * 电机底层驱动 (TB6612FNG)
+ * 包含完整的正反转逻辑和限幅
+ *
+ * 硬件接线 (扩展板原理图):
+ *   A通道 (AIN): AIN1=PA8, AIN2=PA9, PWM=PA12(TIMG0 CCP0) → 接电机 A (右轮)
+ *   B通道 (BIN): BIN1=PB2, BIN2=PB3, PWM=PA13(TIMG0 CCP1) → 接电机 B (左轮)
+ *   引脚宏由 syscfg Motor 实例生成: Motor_AIN1/AIN2/BIN1/BIN2_PORT/PIN
+ *
+ * 注意: Set_PWM(pwmA, pwmB) 中 pwmA=右轮(A通道), pwmB=左轮(B通道)
+ *       Car_Move(PL, PR) 中 PL=左轮, PR=右轮
+ */
+
+/*
+ * 底层PWM输出 (TB6612方向控制 + 定时器PWM)
+ */
+void Set_PWM(int pwmA, int pwmB)
+{
+    /* A 通道 (AIN: PA13/PA14, PWM_C0 PB2) */
+    if (pwmA > 0) {
+        DL_GPIO_setPins(AIN_PORT, AIN_AIN2_PIN);
+        DL_GPIO_clearPins(AIN_PORT, AIN_AIN1_PIN);
+        DL_Timer_setCaptureCompareValue(PWM_0_INST, pwmA, GPIO_PWM_0_C0_IDX);
+    } else if (pwmA < 0) {
+        DL_GPIO_setPins(AIN_PORT, AIN_AIN1_PIN);
+        DL_GPIO_clearPins(AIN_PORT, AIN_AIN2_PIN);
+        DL_Timer_setCaptureCompareValue(PWM_0_INST, -pwmA, GPIO_PWM_0_C0_IDX);
+    } else {
+        DL_GPIO_clearPins(AIN_PORT, AIN_AIN1_PIN);
+        DL_GPIO_clearPins(AIN_PORT, AIN_AIN2_PIN);
+        DL_Timer_setCaptureCompareValue(PWM_0_INST, 0, GPIO_PWM_0_C0_IDX);
+    }
+
+    /* B 通道 (BIN: PA16/PA17, PWM_C1 PB3) */
+    if (pwmB > 0) {
+        DL_GPIO_setPins(BIN_PORT, BIN_BIN2_PIN);
+        DL_GPIO_clearPins(BIN_PORT, BIN_BIN1_PIN);
+        DL_Timer_setCaptureCompareValue(PWM_0_INST, pwmB, GPIO_PWM_0_C1_IDX);
+    } else if (pwmB < 0) {
+        DL_GPIO_setPins(BIN_PORT, BIN_BIN1_PIN);
+        DL_GPIO_clearPins(BIN_PORT, BIN_BIN2_PIN);
+        DL_Timer_setCaptureCompareValue(PWM_0_INST, -pwmB, GPIO_PWM_0_C1_IDX);
+    } else {
+        DL_GPIO_clearPins(BIN_PORT, BIN_BIN1_PIN);
+        DL_GPIO_clearPins(BIN_PORT, BIN_BIN2_PIN);
+        DL_Timer_setCaptureCompareValue(PWM_0_INST, 0, GPIO_PWM_0_C1_IDX);
+    }
+}
+
+/*
+ * 统一电机输出接口
+ * @param PL: 左轮PWM (正=前进, 负=后退)
+ * @param PR: 右轮PWM (正=前进, 负=后退)
+ * 限幅 ±7999
+ */
+void Car_Move(double PL, double PR)
+{
+    int pwm_left  = (int)PL;
+    int pwm_right = (int)PR;
+
+    /* 限幅 ±7999 */
+    if (pwm_left  > 7999) pwm_left  = 7999;
+    if (pwm_left  < -7999) pwm_left  = -7999;
+    if (pwm_right > 7999) pwm_right = 7999;
+    if (pwm_right < -7999) pwm_right = -7999;
+
+    /* Set_PWM(pwmA=右轮, pwmB=左轮) - 注意参数顺序 */
+    Set_PWM(pwm_right, pwm_left);
+}
+
+/*
+ * 设置速度环目标速度
+ */
+static double target_Lspeed = 0;
+static double target_Rspeed = 0;
+
+void Car_setspeed(int16_t L, int16_t R)
+{
+    target_Lspeed = L;
+    target_Rspeed = R;
+}
+
+double Car_gettarget_Lspeed(void) { return target_Lspeed; }
+double Car_gettarget_Rspeed(void) { return target_Rspeed; }
