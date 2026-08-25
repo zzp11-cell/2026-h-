@@ -1,0 +1,40 @@
+# IDE / local settings
+.vscode/
+*.code-workspace
+
+# Secrets and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+.env
+*.env
+
+# Reports and private documents
+*.docx
+*.pdf
+
+# Internal planning notes
+.superpowers/
+**/docs/superpowers/
+CLAUDE.md
+PIN_TODO.md
+**/.git.bak/
+
+# Keil build artifacts
+**/keil/Objects/
+**/keil/Listings/
+*.uvguix.*
+*.uvoptx
+**/Event.dot
+*.bak
+*.bak_macro
+
+# Tool metadata
+.metadata/
+
+# OS junk
+Thumbs.db
+Desktop.ini
